@@ -16,7 +16,8 @@ public class PlayerMovementComponent : MonoBehaviour {
     private Vector3 IPDirection; // Input direction in world space
 
     private float DT;
-   
+
+    public Camera MainCamera;
     // Use this for initialization
     void Start () {
         RB = GetComponent<Rigidbody>();
@@ -53,20 +54,52 @@ public class PlayerMovementComponent : MonoBehaviour {
     public void DoMovement(Rigidbody rigidbody, Vector3 Input, 
                                   float Acceleration, float DeltaTime, float MaxAcceleration)
     {
-        
         CurrentMaxMovementSpeed = (isSprinting == true) ? MaxSprintSpeed : MaxWalkSpeed;
         rigidbody.AddForce(Input * Acceleration * DeltaTime);
         rigidbody.velocity = VectorClamp(rigidbody.velocity, CurrentMaxMovementSpeed, CurrentMaxMovementSpeed, CurrentMaxMovementSpeed);
 
     }
+    
 
 
+    public RaycastHit RaycastFromScreenPoint(Vector2 ScreenPoint, Camera cam)
+    {
+        RaycastHit Result;
 
-    // Update is called once per frame
-    void Update () {
-        DT = Time.deltaTime;
+        Ray ray = cam.ScreenPointToRay(ScreenPoint);
+        
+        Physics.Raycast(ray, out Result, 10000.0f);
 
+        return Result;
+        
+    }
+
+    public void DoMouseLook(Vector2 MousePosition)
+    {
+        if (MainCamera != null)
+        {
+            RaycastHit hit = RaycastFromScreenPoint(MousePosition, MainCamera);
+
+            Vector3 Dir = (hit.point - transform.position).normalized;
+            Dir.y = 0;
+
+            transform.forward = Dir;
+        }
+        else
+        {
+            Debug.Log("ERROR: ASSIGN MAIN CAMERA");
+        }
+    }
+
+    void Update()
+    {
         UpdateInput();
+    }
+    // Update is called once per frame
+    void FixedUpdate () {
+
+        DT = Time.deltaTime;
         DoMovement(RB, IPDirection, Acceleration, DT, CurrentMaxMovementSpeed);
+        DoMouseLook(Input.mousePosition);
 	}
 }
